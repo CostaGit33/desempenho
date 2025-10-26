@@ -17,29 +17,37 @@ body {
   align-items:center;
   padding:25px 10px 80px;
 }
-h1{font-size:clamp(1.4rem,3vw,2.2rem); margin-bottom:20px;color:#00ff99;text-shadow:0 0 12px #00ff88;text-align:center;}
-.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; justify-content:center; width:100%; max-width:1300px; margin-bottom:30px;}
-.card{background:linear-gradient(145deg,#111 0%,#1a1a1a 100%); border-radius:20px; padding:15px; box-shadow:0 0 15px rgba(0,255,136,0.2); position:relative;}
-h3{color:#00ff88;margin-bottom:5px;font-size:clamp(1rem,2.5vw,1.3rem); text-align:center; cursor:pointer;}
-h3.selected{border:2px solid #FFD700; padding:2px 5px; border-radius:8px;}
-.media{position:absolute; top:10px; right:15px; background: rgba(0,255,136,0.15); color:#00ff88; font-weight:bold; padding:6px 10px; border-radius:10px; font-size:clamp(0.85rem,2vw,1rem);}
-canvas{width:100%!important;height:auto!important; max-width:300px;margin:10px auto; display:block;}
-.time-info{margin-bottom:15px;}
-.time-btn{padding:8px 12px; margin:5px; border:none; border-radius:12px; cursor:pointer; font-weight:bold; background:#00ff88; color:#000; transition:0.3s;}
-.time-btn:hover{background:#00cc66;}
+h1 {font-size:clamp(1.4rem,3vw,2.2rem); margin-bottom:20px;color:#00ff99;text-shadow:0 0 12px #00ff88;text-align:center;}
+.grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; justify-content:center; width:100%; max-width:1300px; margin-bottom:30px;}
+.card {background:linear-gradient(145deg,#111 0%,#1a1a1a 100%); border-radius:20px; padding:15px; box-shadow:0 0 15px rgba(0,255,136,0.2); position:relative;}
+h3 {color:#00ff88;margin-bottom:5px;font-size:clamp(1rem,2.5vw,1.3rem); text-align:center; cursor:pointer;}
+.media {position:absolute; top:10px; right:15px; background: rgba(0,255,136,0.15); color:#00ff88; font-weight:bold; padding:6px 10px; border-radius:10px; font-size:clamp(0.85rem,2vw,1rem);}
+canvas {width:100%!important;height:auto!important; max-width:300px;margin:10px auto; display:block;}
+.time-info {margin-bottom:15px;}
+.time-card {display:flex; align-items:flex-start; gap:15px; position:relative; flex-wrap:wrap;}
+.jogadores-lista {display:flex; flex-direction:column; max-width:140px;}
+.jogadores-lista div {padding:4px 6px; background: rgba(0,255,136,0.1); border-radius:6px; font-size:0.9rem; cursor:pointer; margin-bottom:3px; text-align:center; display:flex; justify-content:space-between; align-items:center;}
+.jogadores-lista div span {color:red; font-weight:bold; margin-left:6px; cursor:pointer;}
+.lider {font-weight:bold; font-size:1rem; color:#FFD700; text-align:center; margin-bottom:5px;}
+@media (max-width: 600px) {
+  .time-card {flex-direction:column; align-items:center;}
+  .jogadores-lista {max-width:100%; flex-direction:row; flex-wrap:wrap; justify-content:center;}
+  .jogadores-lista div {margin:3px; font-size:0.8rem; padding:3px 5px;}
+}
 </style>
 </head>
 <body>
 
-<h1>Formar até 4 Times</h1>
+<h1>Formar até 5 Times</h1>
 
 <div class="time-info">
   <span>Time Atual: </span>
   <select id="timeSelect">
-    <option value="0">Time 1</option>
-    <option value="1">Time 2</option>
-    <option value="2">Time 3</option>
-    <option value="3">Time 4</option>
+    <option value="0">Time-Wendel</option>
+    <option value="1">Time-Eric</option>
+    <option value="2">Time-Theu</option>
+    <option value="3">Time-Romulo</option>
+    <option value="4">Time-HenriGol</option>
   </select>
 </div>
 
@@ -51,6 +59,7 @@ canvas{width:100%!important;height:auto!important; max-width:300px;margin:10px a
 <script>
 const atributos = ['Defesa','Ataque','Habilidade','Velocidade','Passe'];
 
+// Lista de jogadores
 let jogadores = [
   ['Joel',13,0,11,7,0], ['Marcão',14,1,0,10,8], ['João',2,0,0,7,0],
   ['Wendel',0,9,1,6,13], ['HenriGol',0,13,0,0,9], ['Edmilson',14,0,0,3,4],
@@ -65,12 +74,12 @@ let jogadores = [
   ['Henrique Barbeiro',8,10,13,4,10], ['Alex',1,15,15,16,12], ['Vitinho',0,11,15,14,7],
   ['Edmilson Novais',8,5,3,5,4], ['Samuel',1,4,9,0,3], ['RayGol',8,0,0,0,0]
 ];
-
 jogadores = jogadores.map(j => [...j, (j[1]+j[2]+j[3]+j[4]+j[5])/5]);
 
 const container = document.getElementById('cardsContainer');
 const timesContainer = document.getElementById('timesContainer');
 const timeSelect = document.getElementById('timeSelect');
+
 const radarOptions = {
   scales: {
     r: { min:0, max:16, ticks:{stepSize:2,color:'#fff',backdropColor:'transparent'},
@@ -80,33 +89,46 @@ const radarOptions = {
   elements:{line:{tension:0.2}}
 };
 
-let times=[[],[],[],[]]; // até 4 times
+// Inicializa times e líderes fixos
+let times = JSON.parse(localStorage.getItem('times')) || [[],[],[],[],[]];
+const lideresFixos = ['Wendel','Eric','Theu','Romulo','HenriGol'];
 
+// Salvar no localStorage
+function salvarTimes() {
+  localStorage.setItem('times', JSON.stringify(times));
+}
+
+// Criar card de jogador
 function criarCard(nome,data,media,cor='#00FF88'){
+  if(times.some(time => time.some(j => j[0] === nome))) return; // já está em um time
+  if(document.getElementById(`card_${nome}`)) return;
   const card=document.createElement('div');
   card.classList.add('card');
+  card.id = `card_${nome}`;
   const canvasId=`chart_${nome.replace(/\s+/g,'_')}_${Math.random().toString(36).substr(2,5)}`;
   card.innerHTML=`<div class="media">${media.toFixed(1)}</div><h3>${nome}</h3><canvas id="${canvasId}"></canvas>`;
   container.appendChild(card);
+
   new Chart(document.getElementById(canvasId), {
     type:'radar',
     data:{ labels:atributos, datasets:[{ data:data, borderColor:cor, backgroundColor:'rgba(0,255,136,0.25)', borderWidth:2, pointBackgroundColor:cor }] },
     options: radarOptions
   });
 
-  // Clique apenas no nome (h3)
   card.querySelector('h3').addEventListener('click', ()=>{
     const t = parseInt(timeSelect.value);
     if(times[t].length>=7){ alert('Time completo! Máximo 7 jogadores.'); return;}
-    if(times[t].some(j=>j[0]===nome)){ alert('Jogador já selecionado!'); return;}
     times[t].push([nome, ...data]);
-    card.querySelector('h3').classList.add('selected'); // marca visual
+    card.remove();
     atualizarTimes();
+    salvarTimes();
   });
 }
 
+// Atualizar times
 function atualizarTimes(){
   timesContainer.innerHTML='';
+
   times.forEach((time,j)=>{
     if(time.length>0){
       const soma=[0,0,0,0,0];
@@ -115,9 +137,42 @@ function atualizarTimes(){
       const mediaGeral=mediaAttr.reduce((a,b)=>a+b,0)/5;
 
       const card=document.createElement('div');
-      card.classList.add('card');
-      const canvasId=`chart_time_${j}_${Math.random().toString(36).substr(2,5)}`;
-      card.innerHTML=`<div class="media">${mediaGeral.toFixed(1)}</div><h3>Time ${j+1}</h3><canvas id="${canvasId}"></canvas>`;
+      card.classList.add('card','time-card');
+
+      const liderDiv = document.createElement('div');
+      liderDiv.classList.add('lider');
+      liderDiv.innerText = `Líder: ${lideresFixos[j]}`;
+      card.appendChild(liderDiv);
+
+      const lista = document.createElement('div');
+      lista.classList.add('jogadores-lista');
+      for(let i=0;i<time.length;i++){
+        const jog = time[i];
+        const item = document.createElement('div');
+        item.innerHTML = `${jog[0]} <span>X</span>`;
+        item.querySelector('span').addEventListener('click', ()=>{
+          times[j].splice(i,1);
+          salvarTimes();
+          atualizarTimes();
+        });
+        lista.appendChild(item);
+      }
+      card.appendChild(lista);
+
+      const canvas = document.createElement('canvas');
+      const canvasId = `chart_time_${j}_${Math.random().toString(36).substr(2,5)}`;
+      canvas.id = canvasId;
+      card.appendChild(canvas);
+
+      const mediaDiv = document.createElement('div');
+      mediaDiv.classList.add('media');
+      mediaDiv.innerText = mediaGeral.toFixed(1);
+      card.appendChild(mediaDiv);
+
+      const titulo = document.createElement('h3');
+      titulo.innerText = `Time ${j+1}`;
+      card.appendChild(titulo);
+
       timesContainer.appendChild(card);
 
       new Chart(document.getElementById(canvasId), {
@@ -127,10 +182,16 @@ function atualizarTimes(){
       });
     }
   });
+
+  // recria cards para jogadores livres
+  jogadores.forEach(j=>{
+    const emTime = times.some(time => time.some(jog => jog[0] === j[0]));
+    if(!emTime) criarCard(j[0], j.slice(1,6), j[6]);
+  });
 }
 
-// Criar cards individuais
-jogadores.forEach(j=> criarCard(j[0],j.slice(1,6),j[6]));
+// inicializa
+atualizarTimes();
 </script>
 </body>
 </html>
